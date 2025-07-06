@@ -4,6 +4,27 @@
 #define MAX 200
 #define ALFABETOLEN 47
 
+void inicializa_alfabeto(char *);
+int buscar_posicion(char , char *);
+void lee_original(char *, int *);
+void primera_etapa(char *, char *, int, char *);
+void codificar(char *, char *, char *, int);
+void graba_mensaje(char *, int);
+
+int main() {
+    char alfabeto[ALFABETOLEN];
+    char mensaje[MAX];
+    char codificado[MAX];
+    int N;
+
+    inicializa_alfabeto(alfabeto);
+    lee_original(mensaje, &N);
+    codificar(mensaje, codificado, alfabeto, N);
+    graba_mensaje(codificado, N);
+
+    return 0;
+}
+
 void inicializa_alfabeto(char *alfabeto) {
     const char caracteres[] = {
         'A','B','C','D','E','F','G','H','I','J','K','L',
@@ -80,18 +101,4 @@ void graba_mensaje(char *codificado, int N) {
     fprintf(out, "%d#%s\n", N, codificado);
 
     fclose(out);
-}
-
-int main() {
-    char alfabeto[ALFABETOLEN];
-    char mensaje[MAX];
-    char codificado[MAX];
-    int N;
-
-    inicializa_alfabeto(alfabeto);
-    lee_original(mensaje, &N);
-    codificar(mensaje, codificado, alfabeto, N);
-    graba_mensaje(codificado, N);
-
-    return 0;
 }
