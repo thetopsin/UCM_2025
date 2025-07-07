@@ -1,94 +1,91 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAX 100
-#define ALPH_SIZE 47
+#define TAM 100
 
-/* prototipos */
-void lee_original(char *orig, int *N);
-void inicializa_alfabeto(char *alf);
-void codificar(char *orig, char *cod, char *alf, int N);
-void primera_etapa(char *orig, char *tmp, int N);
-void segunda_etapa(char *tmp, char *cod, int N);
-void graba_mensaje(char *cod);
+void lee_original(char *, int *);
+void inicializa_alfabeto(char *);
+void codificar(char *, char *, char *, int);
+void primera_etapa(char *, char *, int, char *);
+void segunda_etapa(char *, char *, int, char *);
+void graba_mensaje(char *, int);
 
-int main(){
-    char original[MAX];
-    char alfabeto[ALPH_SIZE+1];
-    char codificado[MAX];
+// Inicializa el alfabeto según el enunciado
+void inicializa_alfabeto(char *alfabeto) {
+    strcpy(alfabeto, "ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789!,. :;?-+*/");
+}
+
+// Busca la posición de un carácter en el alfabeto
+int buscar_posicion(char c, char *alfabeto) {
+    for (int i = 0; i < strlen(alfabeto); i++) {
+        if (alfabeto[i] == c)
+            return i;
+    }
+    return -1;
+}
+
+void lee_original(char *mensaje, int *N) {
+    FILE *archivo = fopen("original.txt", "r");
+    if (archivo == NULL) {
+        printf("No se pudo abrir original.txt\n");
+        return;
+    }
+    fscanf(archivo, "%d#", N);
+    fgets(mensaje, TAM, archivo);
+    mensaje[strcspn(mensaje, "\n")] = '\0'; // Eliminar salto de línea
+    fclose(archivo);
+}
+
+void primera_etapa(char *original, char *etapa1, int N, char *alfabeto) {
+    int len_alf = strlen(alfabeto);
+    for (int i = 0; i < strlen(original); i++) {
+        int pos = buscar_posicion(original[i], alfabeto);
+        int nueva_pos = (pos - N + len_alf) % len_alf;
+        etapa1[i] = alfabeto[nueva_pos];
+    }
+    etapa1[strlen(original)] = '\0';
+}
+
+void segunda_etapa(char *etapa1, char *etapa2, int N, char *alfabeto) {
+    int len_alf = strlen(alfabeto);
+    for (int i = 0; i < strlen(etapa1); i++) {
+        int pos = buscar_posicion(etapa1[i], alfabeto);
+        if (i % 2 == 0) { // múltiplo de 2 (0 también cuenta)
+            int nueva_pos = (pos - N + len_alf) % len_alf;
+            etapa2[i] = alfabeto[nueva_pos];
+        } else {
+            etapa2[i] = etapa1[i];
+        }
+    }
+    etapa2[strlen(etapa1)] = '\0';
+}
+
+void codificar(char *original, char *codificado, char *alfabeto, int N) {
+    char etapa1[TAM];
+    primera_etapa(original, etapa1, N, alfabeto);
+    segunda_etapa(etapa1, codificado, N, alfabeto);
+}
+
+void graba_mensaje(char *mensaje_codificado, int N) {
+    FILE *archivo = fopen("codificado.txt", "w");
+    if (archivo == NULL) {
+        printf("No se pudo crear codificado.txt\n");
+        return;
+    }
+    fprintf(archivo, "%d#%s", N, mensaje_codificado);
+    fclose(archivo);
+}
+
+int main() {
+    char original[TAM];
+    char alfabeto[TAM];
+    char codificado[TAM];
     int N;
 
     lee_original(original, &N);
     inicializa_alfabeto(alfabeto);
     codificar(original, codificado, alfabeto, N);
-    graba_mensaje(codificado);
+    graba_mensaje(codificado, N);
 
     return 0;
-}
-
-/* lee N y mensaje de original.txt (sin espacios entre # y mensaje) */
-void lee_original(char *orig, int *N){
-    FILE *f = fopen("original.txt","r");
-    if(!f){ perror("original.txt"); return; }
-    fscanf(f, "%d#", N);
-    fgets(orig, MAX, f);
-    orig[strcspn(orig,"\r\n")] = '\0';
-    fclose(f);
-}
-
-/* arma el alfabeto tal como en el enunciado */
-void inicializa_alfabeto(char *alf){
-    const char temp[ALPH_SIZE+1] =
-     "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
-     "0123456789!,.:;?-+*/";
-    memcpy(alf, temp, ALPH_SIZE+1);
-}
-
-/* invoca a primera y segunda etapa */
-void codificar(char *orig, char *cod, char *alf, int N){
-    char tmp[MAX];
-    primera_etapa(orig, tmp, N);
-    segunda_etapa(tmp, cod, N);
-}
-
-/* Etapa 1: desplazar -N todos los caracteres */
-void primera_etapa(char *orig, char *tmp, int N){
-    int L = strlen(orig);
-    for(int i=0; i<L; i++){
-        /* buscar en alfabeto */
-        char *p = strchr(alf, orig[i]);
-        int idx = (p ? (int)(p - alf) : -1);
-        if(idx>=0)
-            tmp[i] = alf[(idx - N + ALPH_SIZE) % ALPH_SIZE];
-        else
-            tmp[i] = orig[i];
-    }
-    tmp[L] = '\0';
-}
-
-/* Etapa 2: sobre la salida de primera, desplazar -N sólo en posiciones múltiplo de 2 (0 incluido) */
-void segunda_etapa(char *tmp, char *cod, int N){
-    int L = strlen(tmp);
-    for(int i=0; i<L; i++){
-        if(i % 2 == 0){
-            char *p = strchr(alfabeto, tmp[i]);
-            int idx = (p ? (int)(p - alfabeto) : -1);
-            if(idx>=0)
-                cod[i] = alfabeto[(idx - N + ALPH_SIZE) % ALPH_SIZE];
-            else
-                cod[i] = tmp[i];
-        } else {
-            cod[i] = tmp[i];
-        }
-    }
-    cod[L] = '\0';
-}
-
-/* graba en codificado.txt con formato N#CODIFICADO */
-void graba_mensaje(char *cod){
-    FILE *f = fopen("codificado.txt","w");
-    if(!f){ perror("codificado.txt"); return; }
-    /* usamos N#cod */
-    fprintf(f, "%d#%s\n", N, cod);
-    fclose(f);
 }
